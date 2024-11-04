@@ -1,4 +1,6 @@
-# Astro Starter Kit: Minimal
+# Astro Starter Kit: Auth
+
+by M.Ing. Isaac Hdez Castro
 
 ```sh
 npm create astro@latest -- --template minimal

@@ -1,0 +1,196 @@
+---
+import AuthLayout from "@/layouts/AuthLayout.astro";
+---
+
+<AuthLayout>
+    <div class="flex justify-center self-center z-10">
+        <div class="p-12 bg-white mx-auto rounded-2xl w-100">
+            <div class="mb-4">
+                <h3 class="font-semibold text-2xl text-gray-800">Login</h3>
+                <p class="text-gray-500">Escriba los datos de su cuenta.</p>
+            </div>
+
+            <!-- Formulario -->
+            <form class="space-y-5">
+                <!-- correo electronico -->
+                <div class="space-y-2">
+                    <label
+                        class="text-sm font-medium text-gray-700 tracking-wide"
+                        >Email</label
+                    >
+                    <input
+                        class="w-full text-base px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-400"
+                        type="email"
+                        name="email"
+                        placeholder="mail@gmail.com"
+                    />
+                </div>
+
+                <!-- clave de acceso -->
+                <div class="space-y-2">
+                    <label
+                        class="mb-5 text-sm font-medium text-gray-700 tracking-wide"
+                    >
+                        Clave
+                    </label>
+                    <input
+                        class="w-full content-center text-base px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-400"
+                        type="password"
+                        name="password"
+                        placeholder="Escriba su clave"
+                    />
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input
+                            id="remember_me"
+                            name="remember_me"
+                            type="checkbox"
+                            class="h-4 w-4 bg-blue-500 focus:ring-blue-400 border-gray-300 rounded"
+                        />
+                        <label
+                            for="remember_me"
+                            class="ml-2 block text-sm text-gray-800"
+                        >
+                            Recordarme
+                        </label>
+                    </div>
+                    <div class="text-sm">
+                        <a
+                            href="/signup"
+                            class="text-green-400 hover:text-green-500"
+                        >
+                            ¿No tiene cuenta de usuario?
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Enviar información -->
+                <div>
+                    <!-- boton local -->
+                    <button
+                        id="buSubmit"
+                        type="submit"
+                        class="disabled:bg-gray-300 w-full flex justify-center bg-green-400 hover:bg-green-500 text-gray-100 p-3 rounded-full tracking-wide font-semibold shadow-lg cursor-pointer transition ease-in duration-500"
+                    >
+                        Acceder
+                    </button>
+
+                    <div class="flex flex-1 w-full my-3">
+                        <div class="w-full border-t-2 boder-gray-500"></div>
+                    </div>
+
+                    <!-- boton google -->
+                    <button
+                        id="buGoogle"
+                        type="submit"
+                        class="disabled:bg-gray-300 w-full flex justify-center bg-red-400 text-gray-100 p-3 rounded-full tracking-wide font-semibold shadow-lg cursor-pointer transition ease-in duration-500"
+                    >
+                        Acceder con Google
+                    </button>
+                </div>
+            </form>
+            <div class="pt-5 text-center text-gray-400 text-xs">
+                <span>
+                    Copyright © 2021-{new Date().getFullYear()}
+                    <a
+                        href="https://codepen.io/uidesignhub"
+                        rel=""
+                        target="_blank"
+                        title="Ajimon"
+                        class="text-green hover:text-green-500">AJI</a
+                    ></span
+                >
+            </div>
+        </div>
+    </div>
+</AuthLayout>
+
+<script>
+    import { firebase } from "@/firebase/config";
+    import { actions } from "astro:actions";
+    import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+    import Swal from "sweetalert2";
+
+    const buSubmit = document.querySelector("#buSubmit") as HTMLButtonElement;
+    const buGoogle = document.querySelector("#buGoogle") as HTMLButtonElement;
+
+    buSubmit.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const form = document.querySelector("form") as HTMLFormElement;
+        const formData = new FormData(form);
+        const email = formData.get("email");
+        const passw = formData.get("password");
+        // console.log({email});
+
+        // inhabilidar el boton
+        buSubmit.setAttribute("disabled", "disabled");
+
+        if (email && passw) {
+            // console.log('quiero tener acceso!!!', formData);
+
+            const { data, error } = await actions.login(formData);
+
+            if (error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Credenciales de acceso",
+                    text: error.message,
+                });
+            } else {
+                window.location.replace("/protected");
+            }
+        } else if (!email) {
+            Swal.fire({
+                icon: "error",
+                title: "Credenciales de acceso",
+                text: "Falta correo electronico.",
+            });
+        } else if (!passw) {
+            Swal.fire({
+                icon: "error",
+                title: "Credenciales de acceso",
+                text: "Falta clave de acceso.",
+            });
+        }
+
+        // habilitar nuevamente el boton
+        buSubmit.removeAttribute("disabled");
+    });
+
+    buGoogle.addEventListener("click", async (e) => {
+        e.preventDefault();
+        // console.log('click google');
+
+        // inhabilidar el boton
+        buGoogle.setAttribute("disabled", "disabled");
+        const provider = new GoogleAuthProvider();
+
+        try {
+
+            // Paso 1: obtener la credenicales del lado del cliente
+            const credentials = await signInWithPopup(firebase.auth, provider);
+            // console.log(credentials);
+            
+            //Paso 2: verificar las credenciales en el backend
+            const { error } = await actions.loginGoogle(credentials);
+
+            if (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Credenciales de acceso',
+                    text: error.message,
+                });
+                return;
+            }
+
+            buGoogle.innerText = 'Redireccionando...';       
+            window.location.replace('/protected');
+        } catch (error) {
+            console.log(error);
+        }
+
+        buGoogle.removeAttribute("disabled");
+    });
+</script>
